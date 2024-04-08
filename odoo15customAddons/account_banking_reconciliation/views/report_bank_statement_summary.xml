@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_bank_statement_summary_doc">
+
+    <t t-set="transit_values" t-value="o.get_deposit_in_transit()"/>
+    <t t-set="receivable" t-value="transit_values['receivable'] or 0.0"/>
+    <t t-set="interest_earned" t-value="transit_values['interest_earned'] or 0.0"/>
+    <t t-set="error_on_check_debit" t-value="transit_values['error_on_check_debit']or 0.0"/>
+    <t t-set="error_on_check_credit" t-value="transit_values['error_on_check_credit'] or 0.0"/>
+    <t t-set="nfs_check" t-value="transit_values['nfs_check'] or 0.0"/>
+    <t t-set="service_charge_expense" t-value="transit_values['service_charge_expense'] or 0.0"/>
+    <t t-set="deposit_in_transit" t-value="o.sum_of_udebits or 0.0"/>
+    <t t-set="other_debits_in_transit" t-value="transit_values['other_debits_in_transit'] or 0.0"/>
+    <t t-set="cash_balance_as_per_bank_statement" t-value="o.ending_balance or 0.0"/>
+    <t t-set="outstanding_checks" t-value="o.sum_of_ucredits or 0.0"/>
+        <t t-call="web.external_layout">
+            <style>
+                .space tr {
+                    padding: 0 200px 0 0; /* Add space above and below the row */
+                }
+                    .left-padding {
+                    padding-left: 20px;
+                }
+                </style>
+            <div class="page">
+                <h3 style='text-align:center;'> <span t-field="o.account_id"/></h3>
+                <h3 style='text-align:center;'>Bank Reconciliation Statement</h3>
+                <h3 style='text-align:center;'>Month Ended <span t-field="o.ending_date"/></h3>
+                <!-- Existing styles and table structure -->
+                <table class="table cool-table">
+                    <tbody>
+                        <!-- Cash balance as per bank statement -->
+                        <tr>
+                            <td class="text-left">Cash balance as per bank statement</td>
+                            <td class="text-right">
+                                <span t-field="o.ending_balance"
+                                      t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+                            </td>
+                        </tr>
+                        <!-- Deposit in transit -->
+                        <!-- <tr>
+                            <td class="text-left">Add: Deposit in transit</td>
+                            <td class="text-right">
+                                <span t-field="o.get_deposit_in_transit()"
+                                      t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+                            </td>
+                        </tr> -->
+                        <tr>
+                            <td class="text-left left-padding">      + Deposit in transit</td>
+                            <td class="text-right">
+                            <!-- deposit_in_transit - other_debits_in_transit -->
+                                <span t-esc="o.sum_of_udebits"
+                                    t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+                            </td>
+                        </tr>
+                        <!-- Outstanding checks -->
+                        <tr>
+                            <td class="text-left left-padding">      - Outstanding checks</td>
+                            <td class="text-right">
+                                <span t-field="o.sum_of_ucredits"
+                                      t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+                            </td>
+                        </tr>
+                        <!-- Adjusted cash balance -->
+                        <tr>
+                            <td class="text-left space"><strong><u>Adjusted cash balance</u></strong></td>
+                            <td class="text-right">
+                             <!-- <span t-esc="cash_balance_as_per_bank_statement + deposit_in_transit - outstanding_checks - other_debits_in_transit-receivable" -->
+                                <span t-esc="cash_balance_as_per_bank_statement + deposit_in_transit - outstanding_checks"
+                                      t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+                            </td>
+                        </tr>
+                        <tr class="space"></tr>
+
+                        <!-- Balance as per depositor's record -->
+<tr>
+    <td class="text-left">Balance as per depositor's record</td>
+    <td class="text-right">
+
+        
+        <span t-esc="o.sum_of_debits - o.sum_of_credits + o.sum_of_udebits-o.sum_of_ucredits-receivable - interest_earned - error_on_check_debit+error_on_check_credit + nfs_check + service_charge_expense"
+          t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+                                 
+
+    </td>
+</tr>
+
+<!-- Receivable collected by bank -->
+<tr>
+    <td class="text-left">      + Receivable collected by bank</td>
+    <td class="text-right">
+        <span t-esc="receivable"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr>
+
+<!-- Interest earned -->
+<tr>
+    <td class="text-left">      + Interest earned</td>
+    <td class="text-right">
+        <span t-esc="interest_earned"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr>
+
+<!-- Service charges -->
+<tr>
+    <td class="text-left">      - Service charge expense</td>
+    <td class="text-right">
+        <span t-esc="service_charge_expense"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr>
+
+<!-- nfs check -->
+<tr>
+    <td class="text-left">      - NFS check</td>
+    <td class="text-right">
+        <span t-esc="nfs_check"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr>
+<!-- Error on check -->
+<tr>
+    <td class="text-left">      - Error on check</td>
+    <td class="text-right">
+        <span t-esc="error_on_check_debit - error_on_check_credit"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr>
+
+<!-- Adjusted cash balance -->
+<!-- <tr>
+    <td class="text-left"><strong>Adjusted cash balance</strong></td>
+    <td class="text-right">
+        <span t-esc="o.get_adjusted_cash_balance()"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr> -->
+<tr>
+    <td class="text-left"><strong>Adjusted cash balance</strong></td>
+    <td class="text-right">
+        <span t-esc="o.sum_of_debits - o.sum_of_credits+o.sum_of_udebits-o.sum_of_ucredits"
+              t-options='{"widget": "monetary", "display_currency": o.company_id.currency_id}'/>
+    </td>
+</tr>
+                      
+                    </tbody>
+                </table>
+
+                <!-- all calculated values   in detail-->
+        <!-- <div>
+          
+            <p>receivable: <t t-esc="receivable"/></p>
+            <p>interest earned: <t t-esc="interest_earned"/></p>
+            <p>error on check_debit: <t t-esc="error_on_check_debit"/></p>
+            <p>error on check credit: <t t-esc="error_on_check_credit"/></p>
+            <p>nfs check: <t t-esc="nfs_check"/></p>
+            <p>service charge expense: <t t-esc="service_charge_expense"/></p>
+            <p>deposit in transit: <t t-esc="deposit_in_transit"/></p>
+            <p>other debits in transit: <t t-esc="other_debits_in_transit"/></p>
+            <p>cash balance as per bank statement: <t t-esc="cash_balance_as_per_bank_statement"/></p>
+            <p>outstanding checks: <t t-esc="outstanding_checks"/></p>
+        </div>
+              -->
+            </div>
+        </t>
+    </template>
+
+    <template id="report_bank_statement_summary">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t
+                        t-call="account_banking_reconciliation.report_bank_statement_summary_doc"
+                        t-lang="o.company_id.partner_id.lang"/>
+            </t>
+        </t>
+    </template>
+</odoo>
